@@ -23,13 +23,14 @@ import PIL.Image as Image
 import os
 
 # controls
+experiment_epochs = 2
 categories = ["pig", "cow"]
 STANDARDIZED_IMAGE_SIZE = 150
 LR = 1e-3
 layers = 0
 epochs = 35
 number_of_images_to_collect_in_total = 40
-COLLECT_NEW_DATA = True        #### you can dsave time if the webscrappers have allready done their thing
+COLLECT_NEW_DATA = False        #### you can dsave time if the webscrappers have allready done their thing
 #normalize_amounts_of_data = True
 folder_to_save_data = 'C://Users//tgmjack//Desktop//fully automated ml area'
 
@@ -52,7 +53,7 @@ raw_data_dir = 'C://Users//tgmjack//Desktop//fully automated ml area'
 
 
 
-# webscrapper below 
+# webscrapper below
 
 def accept_cookies(driver):
     accept_xp = '//*[@id="L2AGLb"]'
@@ -292,7 +293,7 @@ def proccess_and_seperate_data():
     train = proccessed_data[:b]
     test = proccessed_data[b:A]
 
-    print("    ---------6----------         ")
+    print("    --------- data info below ----------         ")
     print(fail_counter)
     print(len(train))
     print(len(test))
@@ -311,7 +312,7 @@ train,test = proccess_and_seperate_data()
 
 
 
-#######   make neural net below 
+#######   make neural net below
 
 
 
@@ -333,26 +334,44 @@ file_name = actual_dir+'/'+'{}.meta'.format(MODEL_NAME)
 
 
 
-def make_model(layers):
+def make_model(layers , model_type):
 
     tf.compat.v1.reset_default_graph()
 
     convnet = input_data(shape=[None,STANDARDIZED_IMAGE_SIZE,STANDARDIZED_IMAGE_SIZE, 1], name='input')
 
+    if model_type == 1:
+        #                   incoming, nb_filter, filter_size
+        convnet = conv_2d(convnet, 32, 5, activation='relu')
+        convnet = max_pool_2d(convnet, 5)
+        convnet = conv_2d(convnet, 64, 5, activation='relu')
+        convnet = max_pool_2d(convnet, 5)
+        convnet = conv_2d(convnet, 128, 5, activation='relu')
+        convnet = max_pool_2d(convnet, 5)
+        convnet = conv_2d(convnet, 64, 5, activation='relu')
+        convnet = max_pool_2d(convnet, 5)
+        convnet = conv_2d(convnet, 32, 5, activation='relu')
+        convnet = max_pool_2d(convnet, 5)
+        convnet = fully_connected(convnet, 1024, activation='relu')
+    if model_type == 2:
+        convnet = conv_2d(convnet, 32, 5, activation='relu')
+        convnet = max_pool_2d(convnet, 5)
+        convnet = conv_2d(convnet, 64, 5, activation='relu')
+        convnet = max_pool_2d(convnet, 5)
+        convnet = conv_2d(convnet, 32, 5, activation='relu')
+        convnet = max_pool_2d(convnet, 5)
+        convnet = fully_connected(convnet, 512, activation='relu')
 
-    convnet = conv_2d(convnet, 32, 5, activation='relu')
-    convnet = max_pool_2d(convnet, 5)
-    convnet = conv_2d(convnet, 64, 5, activation='relu')
-    convnet = max_pool_2d(convnet, 5)
-    convnet = conv_2d(convnet, 128, 5, activation='relu')
-    convnet = max_pool_2d(convnet, 5)
-    convnet = conv_2d(convnet, 64, 5, activation='relu')
-    convnet = max_pool_2d(convnet, 5)
-    convnet = conv_2d(convnet, 32, 5, activation='relu')
-    convnet = max_pool_2d(convnet, 5)
-    convnet = fully_connected(convnet, 1024, activation='relu')
+    if model_type == 3:
+        convnet = conv_2d(convnet, 128, 5, activation='relu')
+        convnet = max_pool_2d(convnet, 5)
+        convnet = conv_2d(convnet, 64, 5, activation='relu')
+        convnet = max_pool_2d(convnet, 5)
+        convnet = conv_2d(convnet, 128, 5, activation='relu')
+        convnet = max_pool_2d(convnet, 5)
+        convnet = fully_connected(convnet, 1024, activation='relu')
+
     convnet = dropout(convnet, 0.8)
-
     convnet = fully_connected(convnet, 2, activation='softmax')
     convnet = regression(convnet, optimizer='adam', learning_rate=LR, loss='categorical_crossentropy', name='targets')
     model = tflearn.DNN(convnet, tensorboard_dir=actual_dir, tensorboard_verbose=3)
@@ -360,15 +379,40 @@ def make_model(layers):
     return model
 
 
-model = make_model(layers)
-
-
-
 X = np.array([i[0] for i in train]).reshape(-1,STANDARDIZED_IMAGE_SIZE,STANDARDIZED_IMAGE_SIZE,1)
 Y = [i[1] for i in train]
 
 test_x = np.array([i[0] for i in test]).reshape(-1,STANDARDIZED_IMAGE_SIZE,STANDARDIZED_IMAGE_SIZE,1)
 test_y = [i[1] for i in test]
+
+
+print(X)
+print(X.ndim)
+print(X.shape)
+
+
+print("1 start ")
+model_1 = make_model(layers , 1)
+model_1.fit({'input': X}, {'targets': Y},validation_set=({'input': test_x}, {'targets': test_y}),  n_epoch=experiment_epochs , snapshot_step=500, show_metric=True, run_id=MODEL_NAME)
+
+print("2 start ")
+model_2 = make_model(layers , 2)
+model_2.fit({'input': X}, {'targets': Y},validation_set=({'input': test_x}, {'targets': test_y}),  n_epoch=experiment_epochs , snapshot_step=500, show_metric=True, run_id=MODEL_NAME)
+
+print("3 start ")
+model_3 = make_model(layers , 3)
+model_3.fit({'input': X}, {'targets': Y},validation_set=({'input': test_x}, {'targets': test_y}),  n_epoch=experiment_epochs , snapshot_step=500, show_metric=True, run_id=MODEL_NAME)
+
+
+print(9/0)
+
+
+#
+#
+#   compar the accuracies and choose the best
+#
+#
+
 
 
 #try:
@@ -379,7 +423,11 @@ test_y = [i[1] for i in test]
   #      model.fit({'input': X}, {'targets': Y},validation_set=({'input': test_x}, {'targets': test_y}),  n_epoch=3 , snapshot_step=500, show_metric=True, run_id=MODEL_NAME)
  #       model.save(actual_dir+"/"+MODEL_NAME)
 #except:
+
+
 model.fit({'input': X}, {'targets': Y},validation_set=({'input': test_x}, {'targets': test_y}),  n_epoch=epochs , snapshot_step=500, show_metric=True, run_id=MODEL_NAME)
+
+
 model.save(actual_dir+"/"+MODEL_NAME)
 print("the load needs fiximg to save time")
 
@@ -425,5 +473,4 @@ for num,data in enumerate(test_data[:12]):
     y.axes.get_xaxis().set_visible(False)
     y.axes.get_yaxis().set_visible(False)
 plt.show()
-
 
