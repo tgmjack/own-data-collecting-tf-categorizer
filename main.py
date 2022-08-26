@@ -22,34 +22,57 @@ import io
 import PIL.Image as Image
 import os
 
+
+import numpy as np
+import os
+import random
+import tflearn
+from tflearn.layers.conv import conv_2d, max_pool_2d
+from tflearn.layers.core import input_data, dropout, fully_connected
+from tflearn.layers.estimator import regression
+import tensorflow as tf
+
+
+import datetime
+
+
+print(tf.__version__)
+
+
+
+file_name = actual_dir+'/'+'{}.meta'.format(MODEL_NAME)     ####  <------   needed?
+
 # controls
-experiment_epochs = 2
 categories = ["pig", "cow"]
 STANDARDIZED_IMAGE_SIZE = 150
 LR = 1e-3
 layers = 0
-epochs = 35
+experiment_epochs = 4
+epochs = 55
 number_of_images_to_collect_in_total = 40
 COLLECT_NEW_DATA = False        #### you can dsave time if the webscrappers have allready done their thing
 #normalize_amounts_of_data = True
-folder_to_save_data = 'C://Users//tgmjack//Desktop//fully automated ml area'
 
 
+
+MODEL_NAME = 'model_to_categorize_'     #    ) # just so we remember which saved model is which, sizes must match
+for c in categories:
+    MODEL_NAME = MODEL_NAME + c + "_"
+
+
+#  directory stuff below
+
+actual_dir = "C:\\Users\\Jack.Flavell\\logs"
+raw_data_dir = 'C:\\Users\\Jack.Flavell\\Desktop\\new ml stuff'
 for cat in categories:
-    path =folder_to_save_data+'//'+str(cat)
-
+    path = raw_data_dir +'//'+str(cat)
     isExist = os.path.exists(path)
-
     print(isExist)
-
     if not isExist:
         os.makedirs(path)
         print("The new directory is created!")
-
-
-MODEL_NAME = 'crazy name'     #    ) # just so we remember which saved model is which, sizes must match
-actual_dir = "C:/logs/cvd4/"
-raw_data_dir = 'C://Users//tgmjack//Desktop//fully automated ml area'
+    else:
+        print(str(path)+ "========= exists")
 
 
 
@@ -124,7 +147,9 @@ def save_image(driver, index , category):
     img_xp_p1 = '//*[@id="islrg"]/div[1]/div['
     img_xp_p2 = ']/a[1]/div[1]/img'
     img_xp = img_xp_p1 + str(index) + img_xp_p2
-    filename_to_save = folder_to_save_data +"/"+str(category)+"/"+str(category)+" "+str(index)+".png"#
+    filename_to_save = raw_data_dir +"\\"+str(category)+"\\"+str(category)+" "+str(index)+"."
+    print(filename_to_save)
+    print(" ^^^^^^^^^^^^^^^^^^^^^ ")
     if index > 30:
         print(img_xp)
         WebDriverWait(driver,5).until(EC.presence_of_element_located((By.XPATH,img_xp)))
@@ -147,12 +172,12 @@ def save_image(driver, index , category):
             decodedData = base64.b64decode(encodedData)
         elif base == "SomeOtherBase":    # Add any other base you want
             pass
-        with open(str(category)+"/"+str(index)+"."+file_ext, 'wb') as f:
+        with open(filename_to_save+file_ext, 'x') as f:
             f.write(decodedData)
     except:
         response = requests.get(data)
         if response.status_code == 200:
-            filename_to_save = str(category)+"/"+str(index)+".png"
+            filename_to_save = filename_to_save+"png"
             image = Image.open(io.BytesIO(response.content))
             image.save(filename_to_save)
 
@@ -201,6 +226,7 @@ def get_data(keyword, start_index_num , end_index_num):
                         print("no load more button")
                         if consequitive_fails_to_load_more > 20:   # done
                             done = True
+
             try:
                 save_image(driver, index , keyword)
             except:
@@ -268,8 +294,6 @@ def show_image(im):
 
 def proccess_and_seperate_data():
     proccessed_data = []
-
-
     fail_counter = 0
     for c in categories:
         for path in tqdm(os.listdir(raw_data_dir+"\\"+str(c))):
@@ -316,32 +340,18 @@ train,test = proccess_and_seperate_data()
 
 
 
-import numpy as np
-import os
-import random
-import tflearn
-from tflearn.layers.conv import conv_2d, max_pool_2d
-from tflearn.layers.core import input_data, dropout, fully_connected
-from tflearn.layers.estimator import regression
-import tensorflow as tf
-import datetime
-print(tf.__version__)
-
-
-
-file_name = actual_dir+'/'+'{}.meta'.format(MODEL_NAME)
 
 
 
 
-def make_model(layers , model_type):
+
+def make_model(model_type):
 
     tf.compat.v1.reset_default_graph()
 
     convnet = input_data(shape=[None,STANDARDIZED_IMAGE_SIZE,STANDARDIZED_IMAGE_SIZE, 1], name='input')
 
     if model_type == 1:
-        #                   incoming, nb_filter, filter_size
         convnet = conv_2d(convnet, 32, 5, activation='relu')
         convnet = max_pool_2d(convnet, 5)
         convnet = conv_2d(convnet, 64, 5, activation='relu')
@@ -353,6 +363,7 @@ def make_model(layers , model_type):
         convnet = conv_2d(convnet, 32, 5, activation='relu')
         convnet = max_pool_2d(convnet, 5)
         convnet = fully_connected(convnet, 1024, activation='relu')
+
     if model_type == 2:
         convnet = conv_2d(convnet, 32, 5, activation='relu')
         convnet = max_pool_2d(convnet, 5)
@@ -379,63 +390,85 @@ def make_model(layers , model_type):
     return model
 
 
+
 X = np.array([i[0] for i in train]).reshape(-1,STANDARDIZED_IMAGE_SIZE,STANDARDIZED_IMAGE_SIZE,1)
-Y = [i[1] for i in train]
+Y = np.array([i[1] for i in train])
 
 test_x = np.array([i[0] for i in test]).reshape(-1,STANDARDIZED_IMAGE_SIZE,STANDARDIZED_IMAGE_SIZE,1)
-test_y = [i[1] for i in test]
+test_y = np.array([i[1] for i in test])
 
 
-print(X)
-print(X.ndim)
-print(X.shape)
+
+#tf.compat.v1.debugging.disable_traceback_filtering()
+#print("got rid of traceback filtering ")
 
 
-print("1 start ")
-model_1 = make_model(layers , 1)
+# In[2]:
+
+
+def find_model_accuracy(model , test_features, test_labels):
+    test_results = {}
+    test_results['model'] = model.evaluate(test_features, test_labels)
+    print(f" Accuracy: {test_results}")
+    return float(test_results['model'][0]);
+
+
+# In[ ]:
+
+
+
+# try a few models with a few epochs
+
+model_1 = make_model(1)
 model_1.fit({'input': X}, {'targets': Y},validation_set=({'input': test_x}, {'targets': test_y}),  n_epoch=experiment_epochs , snapshot_step=500, show_metric=True, run_id=MODEL_NAME)
+acc1 = find_model_accuracy(model_1 , test_x, test_y)
 
-print("2 start ")
-model_2 = make_model(layers , 2)
+
+model_2 = make_model(2)
 model_2.fit({'input': X}, {'targets': Y},validation_set=({'input': test_x}, {'targets': test_y}),  n_epoch=experiment_epochs , snapshot_step=500, show_metric=True, run_id=MODEL_NAME)
+acc2 = find_model_accuracy(model_2 , test_x, test_y)
 
-print("3 start ")
-model_3 = make_model(layers , 3)
+
+model_3 = make_model(3)
 model_3.fit({'input': X}, {'targets': Y},validation_set=({'input': test_x}, {'targets': test_y}),  n_epoch=experiment_epochs , snapshot_step=500, show_metric=True, run_id=MODEL_NAME)
+acc3 = find_model_accuracy(model_3 , test_x, test_y)
+
+print(acc1)
+print(acc2)
+print(acc3)
 
 
-print(9/0)
+### choose best model
+if acc1 > acc2  and acc1 > acc3:
+    model_1 = make_model( 1)
+    model = model_1
+    best_model_num = 1
+    print("         1               ")
+if acc2 > acc1  and acc2 > acc3:
+    model_2 = make_model(2)
+    model = model_2
+    best_model_num = 2
+    print("         2               ")
+if acc3 > acc1  and acc3 > acc2:
+    model_3 = make_model(3)
+    model = model_3
+    best_model_num = 3
+    print("         3               ")
 
 
-#
-#
-#   compar the accuracies and choose the best
-#
-#
+# In[ ]:
 
 
-
-#try:
-#    if os.path.exists(file_name):
-     #   model = model.load(model_file = file_name)
-    #    print('model loaded!')
-   # else:
-  #      model.fit({'input': X}, {'targets': Y},validation_set=({'input': test_x}, {'targets': test_y}),  n_epoch=3 , snapshot_step=500, show_metric=True, run_id=MODEL_NAME)
- #       model.save(actual_dir+"/"+MODEL_NAME)
-#except:
-
+############################ train propper model with many epochs
 
 model.fit({'input': X}, {'targets': Y},validation_set=({'input': test_x}, {'targets': test_y}),  n_epoch=epochs , snapshot_step=500, show_metric=True, run_id=MODEL_NAME)
 
-
 model.save(actual_dir+"/"+MODEL_NAME)
+
 print("the load needs fiximg to save time")
 
 print("fing done ")
 
-
-
-# %tensorboard --logdir C://logs//cvd --port 5567
 
 
 ########################### show examples below
@@ -448,10 +481,6 @@ test_data = np.load(raw_data_dir+'/test_data.npy', allow_pickle= True)
 
 np.random.shuffle(test_data)
 fig=plt.figure()
-
-
-
-
 
 for num,data in enumerate(test_data[:12]):
 
