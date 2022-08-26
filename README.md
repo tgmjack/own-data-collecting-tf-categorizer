@@ -5,6 +5,4 @@ this system takes in 2 keywords in a list eg) ["cow", "pig" ] or ["spanners" , "
 it then searches google images for lots of images of these things. 
 a convolutional neural network then learns the difference between these 2 objects
 
-
-#### to do 
- a) sort out printing accuracy to choose best model  b) also see about varying image resolution    c)    better way of showing result at end 
+a series of cnn's differeing inconvolutedness are tried on the data , the best of these models is then reused for more intense training. I can reliably get > 95% accuracy with this system. 
