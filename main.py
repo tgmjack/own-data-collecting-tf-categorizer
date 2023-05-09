@@ -38,19 +38,20 @@ import datetime
 
 print(tf.__version__)
 
+actual_dir = 'C:/Users/tgmjack/Desktop/New folder (66)/fully-automated-cnn-main'
 
 
-file_name = actual_dir+'/'+'{}.meta'.format(MODEL_NAME)     ####  <------   needed?
 
 # controls
-categories = ["pig", "cow"]
+categories = ["cow" , "spanner"]
 STANDARDIZED_IMAGE_SIZE = 150
 LR = 1e-3
 layers = 0
 experiment_epochs = 4
 epochs = 55
-number_of_images_to_collect_in_total = 40
-COLLECT_NEW_DATA = False        #### you can dsave time if the webscrappers have allready done their thing
+number_of_images_to_collect_in_total = 200
+COLLECT_NEW_DATA = True        #### you can dsave time if the webscrappers have allready done their thing
+
 #normalize_amounts_of_data = True
 
 
@@ -62,8 +63,8 @@ for c in categories:
 
 #  directory stuff below
 
-actual_dir = "C:\\Users\\Jack.Flavell\\logs"
-raw_data_dir = 'C:\\Users\\Jack.Flavell\\Desktop\\new ml stuff'
+
+raw_data_dir = 'C:/Users/tgmjack/Desktop/New folder (66)/fully-automated-cnn-main/data'
 for cat in categories:
     path = raw_data_dir +'//'+str(cat)
     isExist = os.path.exists(path)
@@ -81,7 +82,7 @@ for cat in categories:
 def accept_cookies(driver):
     accept_xp = '//*[@id="L2AGLb"]'
     WebDriverWait(driver,10).until(EC.presence_of_element_located((By.XPATH,accept_xp)))
-    accept = driver.find_element_by_xpath(accept_xp)
+    accept = driver.find_element(By.XPATH , accept_xp)
     accept.click()
 def setup_driver():
     driver_xpath2 = "chromedriver.exe"
@@ -93,20 +94,22 @@ def setup_driver():
     return driver
 
 def search_for_image(driver, keyword):
-    search_box_xp = '/html/body/div[1]/div[3]/form/div[1]/div[1]/div[1]/div/div[2]/input'
+    # //*[@id="APjFqb"]
+    # //*[@id="APjFqb"]
+    search_box_xp = '//*[@id="APjFqb"]'
     WebDriverWait(driver,10).until(EC.presence_of_element_located((By.XPATH,search_box_xp)))
-    search_box = driver.find_element_by_xpath(search_box_xp)
+    search_box = driver.find_element(By.XPATH , search_box_xp)
     search_box.send_keys(keyword)
     time.sleep(0.5)
 
     search_button_xp = '/html/body/div[1]/div[3]/form/div[1]/div[1]/div[1]/button'
     WebDriverWait(driver,10).until(EC.presence_of_element_located((By.XPATH,search_button_xp)))
-    search_button = driver.find_element_by_xpath(search_button_xp)
+    search_button = driver.find_element(By.XPATH , search_button_xp)
     search_button.click()
 
     first_image_xp = '//*[@id="islrg"]/div[1]/div[1]/a[1]/div[1]/img'
     WebDriverWait(driver,20).until(EC.presence_of_element_located((By.XPATH,first_image_xp)))
-    first_image = driver.find_element_by_xpath(first_image_xp)
+    first_image = driver.find_element(By.XPATH , first_image_xp)
 
 def check_if_this_index_image_is_visible(driver, index):
     #//*[@id="islrg"]/div[1]/div[72]/a[1]/div[1]/img
@@ -116,7 +119,7 @@ def check_if_this_index_image_is_visible(driver, index):
     print("looking for "+str(img_xp))
     try:
         WebDriverWait(driver,10).until(EC.presence_of_element_located((By.XPATH,img_xp)))
-        img = driver.find_element_by_xpath(img_xp)
+        img = driver.find_element(By.XPATH , img_xp)
         return True
     except:
         return False
@@ -144,22 +147,38 @@ def scroll_down_until_this_index_is_visible(driver, index):
 
 def save_image(driver, index , category):
     print("top of save image func")
+    # #   //*[@id="islrg"]/div[1]/div[52]/div[28]/a[1]/div[1]/img
+    # #   //*[@id="islrg"]/div[1]/div[52]/div[94]/a[1]/div[1]/img
+    # #   //*[@id="islrg"]/div[1]/div[52]/div[94]/a[1]/div[1]/img
+#         //*[@id="islrg"]/div[1]/div[51]/div[28]/a[1]/div[1]/img
+#         //*[@id="islrg"]/div[1]/div[51]/div[29]/a[1]/div[1]/img
+#         //*[@id="islrg"]/div[1]/div[49]/a[1]/div[1]/img
+#         //*[@id="islrg"]/div[1]/div[51]/div[1]/a[1]/div[1]/img
     img_xp_p1 = '//*[@id="islrg"]/div[1]/div['
     img_xp_p2 = ']/a[1]/div[1]/img'
     img_xp = img_xp_p1 + str(index) + img_xp_p2
     filename_to_save = raw_data_dir +"\\"+str(category)+"\\"+str(category)+" "+str(index)+"."
     print(filename_to_save)
     print(" ^^^^^^^^^^^^^^^^^^^^^ ")
-    if index > 30:
+    found_image = False
+    if index < 50:
         print(img_xp)
         WebDriverWait(driver,5).until(EC.presence_of_element_located((By.XPATH,img_xp)))
-        img = driver.find_element_by_xpath(img_xp)
-    try:
-        WebDriverWait(driver,5).until(EC.presence_of_element_located((By.XPATH,img_xp)))
-        img = driver.find_element_by_xpath(img_xp)
-    except:
-        print("couldnt find image")
-        return False
+        img = driver.find_element(By.XPATH , img_xp)
+        found_image = True
+    else:
+        for i in [[51,1], [52,2], [53,3], [54,3]]: 
+            if not found_image:
+                img_xp = img_xp_p1+str(i[0])+"]/div[" + str(index-(50*i[1])) + img_xp_p2
+                print(str(img_xp)+ "    =  img_xp to try")
+                try:
+                    WebDriverWait(driver,1).until(EC.presence_of_element_located((By.XPATH,img_xp)))
+                    img = driver.find_element(By.XPATH , img_xp)
+                    found_image = True
+                except:
+                    print("couldnt find image")
+    if not found_image:
+        raise Exception(" failed to find image ")
 
 
     data = img.get_attribute("src")
@@ -168,25 +187,29 @@ def save_image(driver, index , category):
         file_ext = head.split(';')[0].split('/')[1]
         base = head.split(';')[1]
         decodedData = encodedData
+        print(str(base)+" = base")
         if base == "base64":
+            print("decoding")
             decodedData = base64.b64decode(encodedData)
+            print(type(decodedData))
         elif base == "SomeOtherBase":    # Add any other base you want
             pass
         with open(filename_to_save+file_ext, 'x') as f:
-            f.write(decodedData)
+         #   try:
+            f.write(str(decodedData))
     except:
         response = requests.get(data)
         if response.status_code == 200:
             filename_to_save = filename_to_save+"png"
             image = Image.open(io.BytesIO(response.content))
             image.save(filename_to_save)
-
+    print(" :)    SAVED IMAGE !!!!!!!!!!!")
 
 
 def more_button(driver):
     xp = '//*[@id="islmp"]/div/div/div[2]/div[1]/div[2]/div[2]/input'
     WebDriverWait(driver,1).until(EC.presence_of_element_located((By.XPATH,xp)))
-    button = driver.find_element_by_xpath(xp)
+    button = driver.find_element(By.XPATH , xp)
     button.click()
 
 def get_data(keyword, start_index_num , end_index_num):
@@ -196,9 +219,10 @@ def get_data(keyword, start_index_num , end_index_num):
     search_for_image(driver, keyword)
 
 
+
     ##### scroll a bit
-    time.sleep(1)
-    num_to_scroll_to = 1200
+    time.sleep(2)
+    num_to_scroll_to = 500
     driver.execute_script("window.scrollTo(0, "+str(num_to_scroll_to)+")")
     print("   lkjjlkjlkj    ")
     time.sleep(1)
@@ -207,16 +231,19 @@ def get_data(keyword, start_index_num , end_index_num):
     ##### make sure its visible
     scroll_down_until_this_index_is_visible(driver, start_index_num)
     times_scrolled = 0
+    
     done = False
+    consequitive_fails_to_save = 0
     consequitive_fails_to_load_more = 0
     for i in range(end_index_num-start_index_num):
         if not done:
             print("up to index  =  "+str(i) )
             index = start_index_num+i
             if index % 10 == 0:  # scroll down periodically
-                num_to_scroll_to = times_scrolled * 1200
+                num_to_scroll_to = times_scrolled * 400
                 times_scrolled+=1
                 driver.execute_script("window.scrollTo(0, "+str(num_to_scroll_to)+")")
+                time.sleep(1)
                 if index%20==0: # click load more images button
                     try:
                         more_button(driver)
@@ -226,11 +253,23 @@ def get_data(keyword, start_index_num , end_index_num):
                         print("no load more button")
                         if consequitive_fails_to_load_more > 20:   # done
                             done = True
-
+# //*[@id="islrg"]/div[1]/div[50]/div[46]/a[1]/div[1]/img
+            if index ==2:
+                save_image(driver, index , keyword)
             try:
                 save_image(driver, index , keyword)
+                consequitive_fails_to_save = 0
             except:
+                print(str(consequitive_fails_to_save)+"  =   consequitive_fails_to_save")
+                consequitive_fails_to_save+=1
+                if consequitive_fails_to_save > 5:
+                    if consequitive_fails_to_save > 13:
+                        print(9/0)
+                    times_scrolled+=1
+                    num_to_scroll_to = times_scrolled * 400
+                    driver.execute_script("window.scrollTo(0, "+str(num_to_scroll_to)+")")
                 print("failed to save image ")
+
 
     driver.quit()
 
@@ -240,50 +279,11 @@ def get_data(keyword, start_index_num , end_index_num):
 
 if COLLECT_NEW_DATA:
     for thing in categories:
-        get_data(thing, 1 , 2000 )
+        get_data(thing, 1 , number_of_images_to_collect_in_total )
 
 
 
-#######################      multiproccessing stuff below to save time webscrapping
 
-multiproces = """
-print("brc 4.3")
-processes = []
-print("brc 4.4")
-
-print("yo")
-print(__name__)
-if __name__ == "__main__":
-    freeze_support()
-    manager = Manager()
-    print("brc 4.5")
-    d = manager.dict()
-    print("brc 4.6")
-    proc_nums_over_2 = os.cpu_count () /2
-
-    print("well "+str(proc_nums_over_2))
-    number_of_images_per_process = int(number_of_images_to_collect_in_total / proc_nums_over_2)
-    for word in categories:
-        for proc_num in proc_nums_over_2:
-            print("brc 5")
-            start_index_num = number_of_images_per_process* helper
-            end_index_num = number_of_images_per_process* (helper+1)
-            if word == category[1]:
-                proc_num = proc_num + proc_nums_over_2
-            d[proc_num] = []
-            p1 = Process( target = get_data , args = (word, start_index_num , end_index_num ))
-            processes.append(p1)
-        for proc in processes:
-            print("got a process going")
-            proc.start()
-        for proc in processes:
-            proc.join()
-
-print("done got data :)")
-
-print(9/0)
-# In[ ]:
-"""
 
 ################################################# proccess and load data below
 
@@ -380,6 +380,8 @@ def make_model(model_type):
         convnet = max_pool_2d(convnet, 5)
         convnet = conv_2d(convnet, 128, 5, activation='relu')
         convnet = max_pool_2d(convnet, 5)
+        convnet = conv_2d(convnet, 64, 5, activation='relu')
+        convnet = max_pool_2d(convnet, 5)
         convnet = fully_connected(convnet, 1024, activation='relu')
 
     convnet = dropout(convnet, 0.8)
@@ -444,17 +446,30 @@ if acc1 > acc2  and acc1 > acc3:
     model = model_1
     best_model_num = 1
     print("         1               ")
-if acc2 > acc1  and acc2 > acc3:
+elif acc2 > acc1  and acc2 > acc3:
     model_2 = make_model(2)
     model = model_2
     best_model_num = 2
     print("         2               ")
-if acc3 > acc1  and acc3 > acc2:
+elif acc3 > acc1  and acc3 > acc2:
     model_3 = make_model(3)
     model = model_3
     best_model_num = 3
     print("         3               ")
-
+elif acc3 == acc1:
+    model_1 = make_model( 1)
+    model = model_1
+    best_model_num = 1
+elif acc3 == acc2:
+    model_3 = make_model(3)
+    model = model_3
+    best_model_num = 3
+elif acc1 == acc2:
+    model_1 = make_model( 1)
+    model = model_1
+    best_model_num = 1
+else:
+    raise Exception("trouble finding best accuracy out of =   "+str(acc1)+" , "+str(acc2)+" , "+str(acc3))
 
 # In[ ]:
 
