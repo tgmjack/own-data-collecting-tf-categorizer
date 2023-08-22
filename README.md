@@ -7,4 +7,4 @@ a categorizer is trained up (using tensorflow) using that data collected
 
 a series of cnn's differeing in convolutedness are tried on the data , the best of these models is then reused for more intense training. I can get > 95% accuracy with this system. 
 
-please ensure you have set your directories propperly (near the top of the code)
+please ensure you have set your directories propperly (near the top of the code in main.py)
