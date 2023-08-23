@@ -1,17 +1,10 @@
-##### to do 
-# 1 fix images cant download 
-# 2 fix first few bad images 
-# tidy up 
-
 from data_collector import get_data
 from data_handler import *
 from ml_systems import *
 from display_data import *
-
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-
 import random
 from multiprocessing import Process, Manager , freeze_support
 import io
@@ -24,7 +17,7 @@ import datetime
 
 
 # controls
-actual_dir = 'C:/Users/tgmjack/Desktop/New folder (75)/fully-automated-cnn'
+actual_dir = os.getcwd()
 categories = ["cow" , "spanner"]  
 STANDARDIZED_IMAGE_SIZE = 150
 LR = 1e-3
@@ -37,16 +30,11 @@ COLLECT_NEW_DATA = True        #### you can save time if the webscrappers have a
 ########## end of controls
 
 
-
-
-
-
-
 MODEL_NAME = 'model_to_categorize_'     #    ) # just so we remember which saved model is which, sizes must match
 for c in categories:
     MODEL_NAME +="_"+ c
 
-#  directory stuff below
+##########################   directory stuff below
 
 raw_data_dir = actual_dir+'/data'
 isExist = os.path.exists(raw_data_dir)
@@ -72,10 +60,11 @@ if COLLECT_NEW_DATA:
 train,test = proccess_and_seperate_data(categories , raw_data_dir , STANDARDIZED_IMAGE_SIZE)
 X,Y,test_x,test_y = seperate_data_into_x_and_y(train,test,STANDARDIZED_IMAGE_SIZE)
 
+##################################  quickly check a few different models to see which is best amount of convolutedness for your objects
 model = get_best_model(STANDARDIZED_IMAGE_SIZE , actual_dir , MODEL_NAME , test_x, test_y, X, Y , experiment_epochs , LR)
 
-############################ more heavily train best model from above
+############################ more heavily train the best model from above
 model.fit({'input': X}, {'targets': Y},validation_set=({'input': test_x}, {'targets': test_y}),  n_epoch=epochs , snapshot_step=500, show_metric=True, run_id=MODEL_NAME)
 model.save(actual_dir+"/"+MODEL_NAME)
-########################### show examples below
+########################### show a sample of test data and their predictions 
 display_a_test(raw_data_dir, STANDARDIZED_IMAGE_SIZE , model , categories)

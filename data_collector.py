@@ -9,25 +9,23 @@ from tqdm import tqdm
 import base64
 import time
 import requests
-
+import PIL
+import io
 
 def accept_cookies(driver):
     accept_xp = '//*[@id="L2AGLb"]'
     WebDriverWait(driver,10).until(EC.presence_of_element_located((By.XPATH,accept_xp)))
     accept = driver.find_element(By.XPATH , accept_xp)
     accept.click()
+
 def setup_driver():
     driver_xpath2 = "chromedriver.exe"
     leaseplan_url = 'https://images.google.co.uk/'
     driver = webdriver.Chrome(driver_xpath2)
     driver.get(leaseplan_url)
-#    driver.maximize_window()
-
     return driver
 
 def search_for_image(driver, keyword):
-    # //*[@id="APjFqb"]
-    # //*[@id="APjFqb"]
     search_box_xp = '//*[@id="APjFqb"]'
     WebDriverWait(driver,10).until(EC.presence_of_element_located((By.XPATH,search_box_xp)))
     search_box = driver.find_element(By.XPATH , search_box_xp)
@@ -60,11 +58,6 @@ def scroll_down_until_this_index_is_visible(driver, index):
     times_scrolled = 0
     num_to_scroll_to = 0
     y_pixels_per_screen = 1000
-    #times_scrolled = 0
-   # for t in range(times_scrolled):
-  #      num_to_scroll_to = times_scrolled * y_pixels_per_screen
- #       driver.execute_script("window.scrollTo(0, "+str(num_to_scroll_to)+")")
-#    last_point = num_to_scroll_to
     while not check_if_this_index_image_is_visible(driver, index):
         num_to_scroll_to = times_scrolled * y_pixels_per_screen
         times_scrolled+=1
@@ -78,16 +71,12 @@ def scroll_down_until_this_index_is_visible(driver, index):
 
 
 def save_image(driver, index , category, raw_data_dir):
-    print("top of save image func")
     img_xp_p1 = '//*[@id="islrg"]/div[1]/div['
     img_xp_p2 = ']/a[1]/div[1]/img'
     img_xp = img_xp_p1 + str(index) + img_xp_p2
     filename_to_save = raw_data_dir +"\\"+str(category)+"\\"+str(category)+" "+str(index)+"."
-    print(filename_to_save)
-    print(" ^^^^^^^^^^^^^^^^^^^^^ ")
     found_image = False
     if index < 50:
-        print(img_xp)
         WebDriverWait(driver,5).until(EC.presence_of_element_located((By.XPATH,img_xp)))
         img = driver.find_element(By.XPATH , img_xp)
         found_image = True
@@ -95,7 +84,6 @@ def save_image(driver, index , category, raw_data_dir):
         for i in [[51,1], [52,2], [53,3], [54,3]]: 
             if not found_image:
                 img_xp = img_xp_p1+str(i[0])+"]/div[" + str(index-(50*i[1])) + img_xp_p2
-                print(str(img_xp)+ "    =  img_xp to try")
                 try:
                     WebDriverWait(driver,1).until(EC.presence_of_element_located((By.XPATH,img_xp)))
                     img = driver.find_element(By.XPATH , img_xp)
@@ -107,30 +95,30 @@ def save_image(driver, index , category, raw_data_dir):
 
 
     data = img.get_attribute("src")
+    
     try:
-        try:
-            head, encodedData = data.split(',', 1)
-            file_ext = head.split(';')[0].split('/')[1]
-            base = head.split(';')[1]
-            decodedData = encodedData
-            print(str(base)+" = base")
-            if base == "base64":
-                print("decoding")
-                decodedData = base64.b64decode(encodedData)
-                print(type(decodedData))
-            elif base == "SomeOtherBase":    # Add any other base you want
-                pass
+        head, encodedData = data.split(',', 1)
+        file_ext = head.split(';')[0].split('/')[1]
+        base = head.split(';')[1]
+        
+        print(str(base)+" = base")
+        if base == "base64":
+            decodedData = base64.b64decode(encodedData)
+            with open(filename_to_save+file_ext, 'xb') as f:
+                f.write(decodedData)
+        else:
             with open(filename_to_save+file_ext, 'x') as f:
-            #   try:
-                f.write(str(decodedData))
-        except:
-            response = requests.get(data)
-            if response.status_code == 200:
-                filename_to_save = filename_to_save+"png"
-                image = Image.open(io.BytesIO(response.content))
-                image.save(filename_to_save)
+                f.write(str(encodedData))
     except:
-        print("failed to handle this one ")
+        response = requests.get(data)
+        print(" response vvv ")
+        print(response)
+        print(" response ^^^")
+        if response.status_code == 200:
+            filename_to_save = filename_to_save+"png"
+            image = PIL.Image.open(io.BytesIO(response.content))
+            image.save(filename_to_save)
+
     print(" :)    SAVED IMAGE !!!!!!!!!!!")
 
 
@@ -145,14 +133,10 @@ def get_data(keyword, start_index_num , end_index_num , raw_data_dir):
     driver = setup_driver()
     accept_cookies(driver)
     search_for_image(driver, keyword)
-
-
-
     ##### scroll a bit
     time.sleep(2)
     num_to_scroll_to = 500
     driver.execute_script("window.scrollTo(0, "+str(num_to_scroll_to)+")")
-    print("   lkjjlkjlkj    ")
     time.sleep(1)
 
 
@@ -181,9 +165,7 @@ def get_data(keyword, start_index_num , end_index_num , raw_data_dir):
                         print("no load more button")
                         if consequitive_fails_to_load_more > 20:   # done
                             done = True
-# //*[@id="islrg"]/div[1]/div[50]/div[46]/a[1]/div[1]/img
-            if index ==2:
-                save_image(driver, index , keyword , raw_data_dir)
+
             try:
                 save_image(driver, index , keyword , raw_data_dir)
                 consequitive_fails_to_save = 0
@@ -191,8 +173,6 @@ def get_data(keyword, start_index_num , end_index_num , raw_data_dir):
                 print(str(consequitive_fails_to_save)+"  =   consequitive_fails_to_save")
                 consequitive_fails_to_save+=1
                 if consequitive_fails_to_save > 5:
-                    if consequitive_fails_to_save > 13:
-                        print(9/0)
                     times_scrolled+=1
                     num_to_scroll_to = times_scrolled * 400
                     driver.execute_script("window.scrollTo(0, "+str(num_to_scroll_to)+")")

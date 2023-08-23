@@ -78,7 +78,7 @@ def get_best_model(STANDARDIZED_IMAGE_SIZE , actual_dir , MODEL_NAME , test_x, t
     print(acc2)
     print(acc3)
 
-    ### choose best model
+    ### choose best model by finding most accurate 
     if acc1 > acc2  and acc1 > acc3:
         model_1 = make_model( 1  , STANDARDIZED_IMAGE_SIZE , actual_dir , MODEL_NAME , LR)
         model = model_1
@@ -94,6 +94,7 @@ def get_best_model(STANDARDIZED_IMAGE_SIZE , actual_dir , MODEL_NAME , test_x, t
         model = model_3
         best_model_num = 3
         print("         3               ")
+    ##################### sometimes theyre as accurate as each other so below accounts for that
     elif acc3 == acc1:
         model_1 = make_model( 1  , STANDARDIZED_IMAGE_SIZE , actual_dir , MODEL_NAME , LR)
         model = model_1
